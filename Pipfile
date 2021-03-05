@@ -8,6 +8,3 @@ pyinstaller = "*"
 
 [packages]
 requests = "*"
-pandas = "*"
-argparse = "*"
-benedict = "*"
