@@ -102,7 +102,7 @@ if __name__ == '__main__':
         header_dict['Content-Type'] = 'application/json'
         header_dict['Authorization'] = 'Bearer <Enter your access token here>'
 
-        get_response = requests.get(DROPBOX_TARGET_URL,headers=header_dict)
+        get_response = requests.post(DROPBOX_TARGET_URL,headers=header_dict)
         my_status = get_response.status_code
         my_payload = get_response.content
 
