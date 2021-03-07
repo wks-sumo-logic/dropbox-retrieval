@@ -9,11 +9,30 @@ import sys
 import json
 import datetime
 import logging
+import argparse
 import requests
 
 logging.basicConfig(level=logging.INFO)
 
-DROPBOX_BASE_DIR = '/var/lock/dropbox'
+PARSER = argparse.ArgumentParser(description="""
+collect data from dropbox via API and cache locally
+""")
+
+PARSER.add_argument("-t", metavar='<token>', dest='MY_TOKEN', \
+                    default='UNSET', help="set token")
+PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHEDIR', \
+                    help="set directory")
+
+ARGS = PARSER.parse_args()
+
+DROPBOX_BASE_DIR = '/var/tmp/dropbox'
+if ARGS.MY_CACHEDIR:
+    DROPBOX_BASE_DIR = ARGS.MY_CACHEDIR
+
+BEARER_TOKEN = ARGS.MY_TOKEN
+if BEARER_TOKEN == "UNSET":
+    logging.error('Error: BEARER TOKEN unset. Exiting.')
+    sys.exit(10)
 
 DROPBOX_LOCK_DIR = os.path.join(DROPBOX_BASE_DIR, 'lock')
 DROPBOX_LOCK_FILE = os.path.join(DROPBOX_LOCK_DIR, 'dropbox-timestamp.lock')
@@ -59,7 +78,7 @@ def put_timestamp_data(my_tsvalue, my_tsfile):
             logging.info('writing_timestamp: %s', DROPBOX_LOCK_FILE)
             time_stamp_file.write(my_timestamp)
     except OSError as my_error:
-        logging.info('Unexpected error (%d): %s', my_error.errno, my_error.strerror)
+        logging.error('Unexpected error (%d): %s', my_error.errno, my_error.strerror)
         raise
     return my_timestamp + 'Z'
 
@@ -100,7 +119,7 @@ if __name__ == '__main__':
 
         header_dict['Accept'] = 'application/json'
         header_dict['Content-Type'] = 'application/json'
-        header_dict['Authorization'] = 'Bearer <Enter your access token here>'
+        header_dict['Authorization'] = 'Bearer ' + BEARER_TOKEN
 
         get_response = requests.post(DROPBOX_TARGET_URL,headers=header_dict)
         my_status = get_response.status_code
