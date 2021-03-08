@@ -9,3 +9,4 @@ pyinstaller = "*"
 [packages]
 requests = "*"
 argparse = "*"
+configparser = "*"
