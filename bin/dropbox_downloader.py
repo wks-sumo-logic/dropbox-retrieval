@@ -21,7 +21,7 @@ Collect data from dropbox via API and cache data locally
 PARSER.add_argument("-t", metavar='<token>', dest='MY_TOKEN', \
                     default='UNSET', help="set token")
 PARSER.add_argument("-s", metavar='<start>', dest='MY_START', \
-                    default='UNSET', help="set start time")
+                    type=int,default=0, help="set start time")
 PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHEDIR', \
                     help="set directory")
 
@@ -138,7 +138,8 @@ if __name__ == '__main__':
             logging.error('status_code: %d - %s', my_status, my_payload)
             sys.exit(get_response.status_code)
         else:
-            dropbox_json_logs = json.loads(get_response.content, object_hook=remove_dot_key)
+            ### dropbox_json_logs = json.loads(get_response.content, object_hook=remove_dot_key)
+            dropbox_json_logs = json.loads(get_response.content)
         events = dropbox_json_logs['events']
 
         events_size = len(events)
