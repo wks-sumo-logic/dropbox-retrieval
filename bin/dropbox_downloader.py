@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Simple script to retrieve Dropbox data
+dropbox_downloader - Simple script to retrieve Dropbox data
 """
 
 import os
@@ -15,11 +15,13 @@ import requests
 logging.basicConfig(level=logging.INFO)
 
 PARSER = argparse.ArgumentParser(description="""
-collect data from dropbox via API and cache locally
+Collect data from dropbox via API and cache data locally
 """)
 
 PARSER.add_argument("-t", metavar='<token>', dest='MY_TOKEN', \
                     default='UNSET', help="set token")
+PARSER.add_argument("-s", metavar='<start>', dest='MY_START', \
+                    default='UNSET', help="set start time")
 PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHEDIR', \
                     help="set directory")
 
@@ -31,7 +33,7 @@ if ARGS.MY_CACHEDIR:
 
 BEARER_TOKEN = ARGS.MY_TOKEN
 if BEARER_TOKEN == "UNSET":
-    logging.error('Error: BEARER TOKEN unset. Exiting.')
+    logging.error('BEARER TOKEN unset. Exiting.')
     sys.exit(10)
 
 DROPBOX_LOCK_DIR = os.path.join(DROPBOX_BASE_DIR, 'lock')
@@ -78,7 +80,7 @@ def put_timestamp_data(my_tsvalue, my_tsfile):
             logging.info('writing_timestamp: %s', DROPBOX_LOCK_FILE)
             time_stamp_file.write(my_timestamp)
     except OSError as my_error:
-        logging.error('Unexpected error (%d): %s', my_error.errno, my_error.strerror)
+        logging.error('Unexpected issue encountered (%d): %s', my_error.errno, my_error.strerror)
         raise
     return my_timestamp + 'Z'
 
@@ -96,14 +98,20 @@ def remove_dot_key(json_object):
 
 if __name__ == '__main__':
 
-    timestamp, dropboxLockFile = get_timestamp_data()
+    MY_STAMP, LOCK_FILE = get_timestamp_data()
 
-    now = put_timestamp_data(datetime.datetime.now(), dropboxLockFile)
+    if ARGS.MY_START:
+        current_date = TODAY
+        start_date = current_date - datetime.timedelta(days=int(ARGS.MY_START))
+        MY_STAMP = "{:04d}-{:02d}-{:02d}T00:00:00Z".format(
+                     start_date.year, start_date.month, start_date.day)
+
+    now = put_timestamp_data(datetime.datetime.now(), LOCK_FILE)
 
     #  --data "{\"time\": { \"start_time\": \"2018-4-13T14:00:00Z\" }}"
 
-    start_end_time = { 'start_time': timestamp, 'end_time': now }
-    jsonData= { 'time': start_end_time }
+    start_end_time = { 'start_time': MY_STAMP, 'end_time': now }
+    json_data= { 'time': start_end_time }
 
     DROPBOX_TARGET_URL = DROPBOX_BASE_URL
 
@@ -121,7 +129,8 @@ if __name__ == '__main__':
         header_dict['Content-Type'] = 'application/json'
         header_dict['Authorization'] = 'Bearer ' + BEARER_TOKEN
 
-        get_response = requests.post(DROPBOX_TARGET_URL,headers=header_dict)
+        get_response = requests.post(DROPBOX_TARGET_URL,
+                                     data=json.dumps(json_data),headers=header_dict)
         my_status = get_response.status_code
         my_payload = get_response.content
 
@@ -137,12 +146,12 @@ if __name__ == '__main__':
 
         output_file = open(DROPBOX_LOGS_FILE, 'a+')
         for event in events:
-            jsonLog = json.dumps(event)
-            output_file.write('{}\n'.format(jsonLog))
+            json_log = json.dumps(event)
+            output_file.write('{}\n'.format(json_log))
 
         if dropbox_json_logs['has_more'] == 'true':
             DROPBOX_TARGET_URL = 'https://api.dropboxapi.com/2/team_log/get_events/continue'
-            jsonData = { 'cursor': dropbox_json_logs['cursor'] }
+            json_data = { 'cursor': dropbox_json_logs['cursor'] }
             logging.info('Retrieved: %d bytes and getting more data.', events_size)
         else:
             GET_DATA = "false"

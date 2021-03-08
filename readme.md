@@ -40,13 +40,34 @@ See the contents of "pipfile"
 Script Names and Purposes
 =========================
 
-    1. ./bin - has all of the scripts
-          ./bin/dropbox-download.py
+    1. the scripts in ./bin - 
+        ./bin/dropbox_downloader.py
+
+    2. show the help page
+        ./bin/dropbox_downloader.py -h
+        usage: dropbox_downloader.py [-h] [-t <token>] [-s <start>] [-d <cachedir>]
+        
+        Collect data from dropbox via API and cache data locally
+        
+        optional arguments:
+          -h, --help     show this help message and exit
+          -t <token>     set token
+          -s <start>     set start time
+          -d <cachedir>  set directory
+
+    3. specify the bearer token to use [required]
+        ./bin/dropbox_downloader.py -t <bearer_token>
+
+    4. specify a different cache directory
+        ./bin/dropbox_downloader.py -d /var/tmp/sample/cache/directory
+
+    5. specify a different start date ( retrieve previous 20 days from now )
+        ./bin/dropbox_downloader.py -s 20
 
 To Do List:
 ===========
 
-* Add options to customize script analysis
+* improve logging and output files
 
 License
 =======
