@@ -10,6 +10,7 @@ import json
 import datetime
 import logging
 import argparse
+import configparser
 import requests
 
 logging.basicConfig(level=logging.INFO)
@@ -18,20 +19,52 @@ PARSER = argparse.ArgumentParser(description="""
 Collect data from dropbox via API and cache data locally
 """)
 
-PARSER.add_argument("-t", metavar='<token>', dest='MY_TOKEN', \
-                    default='UNSET', help="set token")
-PARSER.add_argument("-s", metavar='<start>', dest='MY_START', \
+PARSER.add_argument("-t", metavar='<token>', dest='MY_BEARER_TOKEN', \
+                    help="set token")
+
+PARSER.add_argument("-r", metavar='<start>', dest='MY_TIME_RANGE', \
                     type=int,default=0, help="set start time")
-PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHEDIR', \
+
+PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHE_DIR', \
                     help="set directory")
+
+PARSER.add_argument("-c", metavar='<cfgfile>', dest='MY_CFG_FILE', \
+                    help="use config file")
 
 ARGS = PARSER.parse_args()
 
+TIME_RANGE = 0
 DROPBOX_BASE_DIR = '/var/tmp/dropbox'
-if ARGS.MY_CACHEDIR:
-    DROPBOX_BASE_DIR = ARGS.MY_CACHEDIR
+BEARER_TOKEN = 'UNSET'
 
-BEARER_TOKEN = ARGS.MY_TOKEN
+if ARGS.MY_CFG_FILE:
+
+    CFGFILE = os.path.abspath(ARGS.MY_CFG_FILE)
+    CONFIG = configparser.ConfigParser()
+    CONFIG.read(CFGFILE)
+
+    if CONFIG.has_option('Default', 'BEARER_TOKEN'):
+        BEARER_TOKEN = json.loads(CONFIG.get("Default", "BEARER_TOKEN"))
+
+    if CONFIG.has_option('Default', 'CACHE_DIR'):
+        DROPBOX_BASE_DIR = os.path.abspath(json.loads(CONFIG.get("Default", "CACHE_DIR")))
+
+    if CONFIG.has_option('Default', 'TIME_RANGE'):
+        TIME_RANGE = os.path.abspath(json.loads(CONFIG.get("Default", "TIME_RANGE")))
+else:
+
+    if ARGS.MY_BEARER_TOKEN:
+        BEARER_TOKEN = ARGS.MY_BEARER_TOKEN
+
+    if ARGS.MY_CACHE_DIR:
+        DROPBOX_BASE_DIR = os.path.abspath(ARGS.MY_CACHE_DIR)
+
+    if ARGS.MY_TIME_RANGE:
+        TIME_RANGE = ARGS.MY_TIME_RANGE
+
+    if ARGS.dir:
+        BASEDIR = os.path.abspath((os.path.join(ARGS.dir)))
+
 if BEARER_TOKEN == "UNSET":
     logging.error('BEARER TOKEN unset. Exiting.')
     sys.exit(10)
@@ -100,15 +133,12 @@ if __name__ == '__main__':
 
     MY_STAMP, LOCK_FILE = get_timestamp_data()
 
-    if ARGS.MY_START:
-        current_date = TODAY
-        start_date = current_date - datetime.timedelta(days=int(ARGS.MY_START))
-        MY_STAMP = "{:04d}-{:02d}-{:02d}T00:00:00Z".format(
-                     start_date.year, start_date.month, start_date.day)
+    start_date = TODAY - datetime.timedelta(days=int(ARGS.TIME_RANGE))
+
+    MY_STAMP = "{:04d}-{:02d}-{:02d}T00:00:00Z".format(
+                 start_date.year, start_date.month, start_date.day)
 
     now = put_timestamp_data(datetime.datetime.now(), LOCK_FILE)
-
-    #  --data "{\"time\": { \"start_time\": \"2018-4-13T14:00:00Z\" }}"
 
     start_end_time = { 'start_time': MY_STAMP, 'end_time': now }
     json_data= { 'time': start_end_time }
@@ -131,6 +161,7 @@ if __name__ == '__main__':
 
         get_response = requests.post(DROPBOX_TARGET_URL,
                                      data=json.dumps(json_data),headers=header_dict)
+
         my_status = get_response.status_code
         my_payload = get_response.content
 
