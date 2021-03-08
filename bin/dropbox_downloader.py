@@ -50,7 +50,7 @@ if ARGS.MY_CFG_FILE:
         DROPBOX_BASE_DIR = os.path.abspath(json.loads(CONFIG.get("Default", "CACHE_DIR")))
 
     if CONFIG.has_option('Default', 'TIME_RANGE'):
-        TIME_RANGE = os.path.abspath(json.loads(CONFIG.get("Default", "TIME_RANGE")))
+        TIME_RANGE = json.loads(CONFIG.get("Default", "TIME_RANGE"))
 else:
 
     if ARGS.MY_BEARER_TOKEN:
