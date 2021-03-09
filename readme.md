@@ -64,6 +64,12 @@ Script Names and Purposes
     5. specify a different start date ( retrieve previous 20 days from now )
         ./bin/dropbox_downloader.py -s 20
 
+    6. specify a configuration file to use
+        ./bin/dropbox_downloader.py -c /var/tmp/dropbox_downloader.cfg
+
+    7. specify script verbosity ( default is 0 or silent save errors )
+        ./bin/dropbox_downloader.py -c /var/tmp/dropbox_downloader.cfg -v 5
+
 To Do List:
 ===========
 
