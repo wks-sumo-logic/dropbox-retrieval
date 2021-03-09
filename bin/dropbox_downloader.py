@@ -2,6 +2,15 @@
 
 """
 dropbox_downloader - Simple script to retrieve Dropbox data
+
+script flow:
+    + evaluate/validate variables
+    + create directory and files if needed
+    + gets timestamps
+    + sets timestamps
+    + gets data and sanitizes it
+    + retrieves any extra based on cursors
+    + persists the data locally
 """
 
 import os
@@ -31,6 +40,9 @@ PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHE_DIR', \
 PARSER.add_argument("-c", metavar='<cfgfile>', dest='MY_CFG_FILE', \
                     help="use config file")
 
+PARSER.add_argument("-v", type=int, default=0, metavar='<verbose>', \
+                    dest='VERBOSE', help="increase verbosity")
+
 ARGS = PARSER.parse_args()
 
 TIME_RANGE = 0
@@ -51,31 +63,34 @@ if ARGS.MY_CFG_FILE:
 
     if CONFIG.has_option('Default', 'TIME_RANGE'):
         TIME_RANGE = json.loads(CONFIG.get("Default", "TIME_RANGE"))
-else:
 
-    if ARGS.MY_BEARER_TOKEN:
-        BEARER_TOKEN = ARGS.MY_BEARER_TOKEN
+if ARGS.MY_BEARER_TOKEN:
+    BEARER_TOKEN = ARGS.MY_BEARER_TOKEN
 
-    if ARGS.MY_CACHE_DIR:
-        DROPBOX_BASE_DIR = os.path.abspath(ARGS.MY_CACHE_DIR)
+if ARGS.MY_CACHE_DIR:
+    DROPBOX_BASE_DIR = os.path.abspath(ARGS.MY_CACHE_DIR)
 
-    if ARGS.MY_TIME_RANGE:
-        TIME_RANGE = ARGS.MY_TIME_RANGE
-
-    if ARGS.dir:
-        BASEDIR = os.path.abspath((os.path.join(ARGS.dir)))
+if ARGS.MY_TIME_RANGE:
+    TIME_RANGE = ARGS.MY_TIME_RANGE
 
 if BEARER_TOKEN == "UNSET":
     logging.error('BEARER TOKEN unset. Exiting.')
     sys.exit(10)
 
+if ARGS.VERBOSE > 5:
+    print('Token: {}'.format(BEARER_TOKEN))
+    print('Cache: {}'.format(DROPBOX_BASE_DIR))
+    print('Range: {}'.format(TIME_RANGE))
+
 DROPBOX_LOCK_DIR = os.path.join(DROPBOX_BASE_DIR, 'lock')
 DROPBOX_LOCK_FILE = os.path.join(DROPBOX_LOCK_DIR, 'dropbox-timestamp.lock')
-logging.info('lock_directory: %s', DROPBOX_LOCK_FILE)
+if ARGS.VERBOSE > 3:
+    logging.info('resolving lock_directory: %s', DROPBOX_LOCK_FILE)
 
 DROPBOX_LOGS_DIR = os.path.join(DROPBOX_BASE_DIR, 'logs')
 DROPBOX_LOGS_FILE = os.path.join(DROPBOX_LOGS_DIR, 'dropbox-timestamp.log')
-logging.info('logs_directory: %s', DROPBOX_LOGS_FILE)
+if ARGS.VERBOSE > 3:
+    logging.info('resolving logs_directory: %s', DROPBOX_LOGS_FILE)
 
 TODAY = datetime.datetime.today()
 
@@ -84,25 +99,29 @@ TIMESTAMP = "{:04d}-{:02d}-{:02d}T00:00:00.000".format(TODAY.year, TODAY.month, 
 DROPBOX_BASE_URL = 'https://api.dropboxapi.com/2/team_log/get_events'
 
 def get_timestamp_data():
+
     """
     Collect the timestamp from either a local file or current date: DROPBOX_LOCK_FILE
     """
 
     for target_dir in ( DROPBOX_LOCK_DIR, DROPBOX_LOGS_DIR ):
         if not os.path.exists(target_dir):
-            logging.info('creating_directory: %s', target_dir)
+            if ARGS.VERBOSE > 5:
+                logging.info('creating_directory: %s', target_dir)
             os.makedirs(target_dir)
 
     my_timestamp = TIMESTAMP
 
     if os.path.exists(DROPBOX_LOCK_FILE):
-        logging.info('reading_timestamp: %s', DROPBOX_LOCK_FILE)
+        if ARGS.VERBOSE > 5:
+            logging.info('reading_timestamp: %s', DROPBOX_LOCK_FILE)
         with open(DROPBOX_LOCK_FILE, 'r') as time_stamp_file:
             my_timestamp = time_stamp_file.read()
 
     return my_timestamp + 'Z', DROPBOX_LOCK_FILE
 
 def put_timestamp_data(my_tsvalue, my_tsfile):
+
     """
     Persist the timestamp into a local file for comparison: DROPBOX_LOCK_FILE
     """
@@ -110,7 +129,8 @@ def put_timestamp_data(my_tsvalue, my_tsfile):
     my_timestamp = my_tsvalue.replace(microsecond=0).isoformat()
     try:
         with open(my_tsfile, 'w') as time_stamp_file:
-            logging.info('writing_timestamp: %s', DROPBOX_LOCK_FILE)
+            if ARGS.VERBOSE > 5:
+                logging.info('writing_timestamp: %s', DROPBOX_LOCK_FILE)
             time_stamp_file.write(my_timestamp)
     except OSError as my_error:
         logging.error('Unexpected issue encountered (%d): %s', my_error.errno, my_error.strerror)
@@ -118,6 +138,7 @@ def put_timestamp_data(my_tsvalue, my_tsfile):
     return my_timestamp + 'Z'
 
 def remove_dot_key(json_object):
+
     """
     Clean up Json object: json_object
     """
@@ -184,6 +205,7 @@ if __name__ == '__main__':
         if dropbox_json_logs['has_more'] == 'true':
             DROPBOX_TARGET_URL = 'https://api.dropboxapi.com/2/team_log/get_events/continue'
             json_data = { 'cursor': dropbox_json_logs['cursor'] }
-            logging.info('Retrieved: %d bytes and getting more data.', events_size)
+            if ARGS.VERBOSE > 7:
+                logging.info('Retrieved: %d bytes and getting more data.', events_size)
         else:
             GET_DATA = "false"
