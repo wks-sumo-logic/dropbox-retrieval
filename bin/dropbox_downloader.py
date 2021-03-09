@@ -154,7 +154,7 @@ if __name__ == '__main__':
 
     MY_STAMP, LOCK_FILE = get_timestamp_data()
 
-    start_date = TODAY - datetime.timedelta(days=int(ARGS.TIME_RANGE))
+    start_date = TODAY - datetime.timedelta(days=int(TIME_RANGE))
 
     MY_STAMP = "{:04d}-{:02d}-{:02d}T00:00:00Z".format(
                  start_date.year, start_date.month, start_date.day)
