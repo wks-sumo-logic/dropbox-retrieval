@@ -160,6 +160,7 @@ if __name__ == '__main__':
                  start_date.year, start_date.month, start_date.day)
 
     now = put_timestamp_data(datetime.datetime.now(), LOCK_FILE)
+    now = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     start_end_time = { 'start_time': MY_STAMP, 'end_time': now }
     json_data= { 'time': start_end_time }
