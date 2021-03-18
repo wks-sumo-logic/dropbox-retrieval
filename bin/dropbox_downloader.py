@@ -118,7 +118,7 @@ def get_timestamp_data():
         with open(DROPBOX_LOCK_FILE, 'r') as time_stamp_file:
             my_timestamp = time_stamp_file.read()
 
-    my_timestamp = my_timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
+    my_timestamp = my_timestamp + 'Z'
     return my_timestamp, DROPBOX_LOCK_FILE
 
 def put_timestamp_data(my_tsvalue, my_tsfile):
@@ -137,7 +137,7 @@ def put_timestamp_data(my_tsvalue, my_tsfile):
         logging.error('Unexpected issue encountered (%d): %s', my_error.errno, my_error.strerror)
         raise
 
-    my_timestamp = my_timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
+    my_timestamp = my_timestamp + 'Z'
     return my_timestamp
 
 def remove_dot_key(json_object):
