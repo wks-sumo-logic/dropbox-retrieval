@@ -32,7 +32,7 @@ PARSER.add_argument("-t", metavar='<token>', dest='MY_BEARER_TOKEN', \
                     help="set token")
 
 PARSER.add_argument("-r", metavar='<start>', dest='MY_TIME_RANGE', \
-                    type=int,default=0, help="set start time")
+                    type=int,default=1, help="set start time")
 
 PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHE_DIR', \
                     help="set directory")
@@ -203,6 +203,14 @@ if __name__ == '__main__':
         output_file = open(DROPBOX_LOGS_FILE, 'a+')
         for event in events:
             json_log = json.dumps(event)
+            jsontime = ( json_log['timestamp'].replace('T', ' ')).replace('Z', '')
+
+            utcdate = jsontime.replace(tzinfo=datetime.timezone.utc)
+            mydate = utcdate.astimezone()
+
+            adjusted_timestamp = mydate.strftime("%Y-%m-%d %H:%M:%S %Z")
+            json_log['adjusted_timestamp'] = adjusted_timestamp
+
             output_file.write('{}\n'.format(json_log))
 
         if dropbox_json_logs['has_more'] == 'true':
