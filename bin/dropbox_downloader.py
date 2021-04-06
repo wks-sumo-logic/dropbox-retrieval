@@ -202,15 +202,19 @@ if __name__ == '__main__':
 
         output_file = open(DROPBOX_LOGS_FILE, 'a+')
         for event in events:
-            json_log = json.dumps(event)
-            jsontime = ( json_log['timestamp'].replace('T', ' ')).replace('Z', '')
+
+            jsonstamp = event['timestamp'].replace('T', ' ').replace('Z', '')
+            jsontime = datetime.datetime.strptime(jsonstamp, "%Y-%m-%d %H:%M:%S")
 
             utcdate = jsontime.replace(tzinfo=datetime.timezone.utc)
-            mydate = utcdate.astimezone()
+            original_timestamp = utcdate.strftime("%Y-%m-%d %H:%M:%S %Z")
+            event['original_timestamp'] = original_timestamp
 
-            adjusted_timestamp = mydate.strftime("%Y-%m-%d %H:%M:%S %Z")
-            json_log['adjusted_timestamp'] = adjusted_timestamp
+            curdate = utcdate.astimezone()
+            adjusted_timestamp = curdate.strftime("%Y-%m-%d %H:%M:%S %Z")
+            event['adjusted_timestamp'] = adjusted_timestamp
 
+            json_log = json.dumps(event)
             output_file.write('{}\n'.format(json_log))
 
         if dropbox_json_logs['has_more'] == 'true':
