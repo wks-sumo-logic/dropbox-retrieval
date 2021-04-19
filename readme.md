@@ -41,34 +41,43 @@ Script Names and Purposes
 =========================
 
     1. the scripts in ./bin - 
-        ./bin/dropbox_downloader.py
+        prompt> ./bin/dropbox_downloader.py
 
     2. show the help page
-        ./bin/dropbox_downloader.py -h
-        usage: dropbox_downloader.py [-h] [-t <token>] [-s <start>] [-d <cachedir>]
-        
-        Collect data from dropbox via API and cache data locally
-        
-        optional arguments:
-          -h, --help     show this help message and exit
-          -t <token>     set token
-          -s <start>     set start time
-          -d <cachedir>  set directory
+        prompt> ./bin/dropbox_downloader.py -h
+
+usage: dropbox_downloader.py [-h] [-t <token>] [-r <start>] [-d <cachedir>] [-c <cfgfile>] [-v <verbose>] [-i]
+
+Collect data from dropbox via API and cache data locally
+
+optional arguments:
+  -h, --help        show this help message and exit
+  -t <token>        set token
+  -r <start>        set time range from current date
+  -d <cachedir>     set directory
+  -c <cfgfile>      use config file
+  -v <verbose>      increase verbosity
+  -i, --initialize  initialize config file
 
     3. specify the bearer token to use [required]
-        ./bin/dropbox_downloader.py -t <bearer_token>
+        prompt> ./bin/dropbox_downloader.py -t <bearer_token>
 
     4. specify a different cache directory
-        ./bin/dropbox_downloader.py -d /var/tmp/sample/cache/directory
+        prompt> ./bin/dropbox_downloader.py -d /var/tmp/sample/cache/directory
 
     5. specify a different start date ( retrieve previous 20 days from now )
-        ./bin/dropbox_downloader.py -s 20
+        prompt> ./bin/dropbox_downloader.py -r 20d
+
+NOTE: this support ranges in weeks, days, hours, minutes, and seconds
 
     6. specify a configuration file to use
-        ./bin/dropbox_downloader.py -c /var/tmp/dropbox_downloader.cfg
+        prompt> ./bin/dropbox_downloader.py -c /var/tmp/dropbox_downloader.cfg
 
     7. specify script verbosity ( default is 0 or silent save errors )
-        ./bin/dropbox_downloader.py -c /var/tmp/dropbox_downloader.cfg -v 5
+        prompt> ./bin/dropbox_downloader.py -c /var/tmp/dropbox_downloader.cfg -v 5
+
+    8. initiallize a starter configu file
+        prompt> ./bin/dropbox_downloader.py -i
 
 To Do List:
 ===========

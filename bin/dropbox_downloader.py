@@ -32,7 +32,7 @@ PARSER.add_argument("-t", metavar='<token>', dest='MY_BEARER_TOKEN', \
                     help="set token")
 
 PARSER.add_argument("-r", metavar='<start>', dest='MY_TIME_RANGE', \
-                    type=int,default=1, help="set start time")
+                    default='1d', help="set time range from current date")
 
 PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHE_DIR', \
                     help="set directory")
@@ -43,11 +43,42 @@ PARSER.add_argument("-c", metavar='<cfgfile>', dest='MY_CFG_FILE', \
 PARSER.add_argument("-v", type=int, default=0, metavar='<verbose>', \
                     dest='VERBOSE', help="increase verbosity")
 
+PARSER.add_argument("-i", "--initialize", action='store_true', default=False, \
+                    dest='INITIALIZE', help="initialize config file")
+
 ARGS = PARSER.parse_args()
 
 TIME_RANGE = 0
 DROPBOX_BASE_DIR = '/var/tmp/dropbox'
 BEARER_TOKEN = 'UNSET'
+
+def initialize_config_file():
+    """
+    Initialize configuration file, write output, and then exit
+    """
+
+    starter_config='/var/tmp/dropbox.initial.cfg'
+    config = configparser.RawConfigParser()
+    config.optionxform = str
+
+    config.add_section('Default')
+
+    cached_input = ( input ("Please enter your Cache Directory: \n") or DROPBOX_BASE_DIR )
+    config.set('Default', 'CACHE_DIR', cached_input )
+
+    token_input = input ("Please enter your Bearer Token: \n")
+    config.set('Default', 'BEARER_TOKEN', token_input )
+
+    time_range_input = ( input ("Please enter the desired time range: \n") or "1d" )
+    config.set('Default', 'TIME_RANGE', time_range_input )
+
+    with open(starter_config, 'w') as configfile:
+        config.write(configfile)
+    print('Complete! Written: {}'.format(starter_config))
+    sys.exit()
+
+if ARGS.INITIALIZE:
+    initialize_config_file()
 
 if ARGS.MY_CFG_FILE:
 
@@ -56,13 +87,13 @@ if ARGS.MY_CFG_FILE:
     CONFIG.read(CFGFILE)
 
     if CONFIG.has_option('Default', 'BEARER_TOKEN'):
-        BEARER_TOKEN = json.loads(CONFIG.get("Default", "BEARER_TOKEN"))
+        BEARER_TOKEN = CONFIG.get("Default", "BEARER_TOKEN")
 
     if CONFIG.has_option('Default', 'CACHE_DIR'):
-        DROPBOX_BASE_DIR = os.path.abspath(json.loads(CONFIG.get("Default", "CACHE_DIR")))
+        DROPBOX_BASE_DIR = os.path.abspath(CONFIG.get("Default", "CACHE_DIR"))
 
     if CONFIG.has_option('Default', 'TIME_RANGE'):
-        TIME_RANGE = json.loads(CONFIG.get("Default", "TIME_RANGE"))
+        TIME_RANGE = CONFIG.get("Default", "TIME_RANGE")
 
 if ARGS.MY_BEARER_TOKEN:
     BEARER_TOKEN = ARGS.MY_BEARER_TOKEN
@@ -97,6 +128,15 @@ TODAY = datetime.datetime.today()
 TIMESTAMP = "{:04d}-{:02d}-{:02d}T00:00:00.000".format(TODAY.year, TODAY.month, TODAY.day)
 
 DROPBOX_BASE_URL = 'https://api.dropboxapi.com/2/team_log/get_events'
+
+SECONDS_TABLE = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
+
+
+def convert_to_seconds(my_range):
+    """
+    Convert the range string into seconds
+    """
+    return int(my_range[:-1]) * SECONDS_TABLE[my_range[-1]]
 
 def get_timestamp_data():
 
@@ -140,31 +180,34 @@ def put_timestamp_data(my_tsvalue, my_tsfile):
     my_timestamp = my_timestamp + 'Z'
     return my_timestamp
 
-def remove_dot_key(json_object):
-
-    """
-    Clean up Json object: json_object
-    """
-
-    for key in json_object.keys():
-        new_key = json_object.replace(".","")
-        if new_key != key:
-            json_object[new_key] = json_object[key]
-            del json_object[key]
-    return json_object
-
 if __name__ == '__main__':
 
     MY_STAMP, LOCK_FILE = get_timestamp_data()
 
-    start_date = TODAY - datetime.timedelta(days=int(TIME_RANGE))
+    my_now = datetime.datetime.now()
+    now = put_timestamp_data(my_now, LOCK_FILE)
 
-    MY_STAMP = "{:04d}-{:02d}-{:02d}T00:00:00Z".format(
-                 start_date.year, start_date.month, start_date.day)
+    final_seconds = int( my_now.timestamp() )
+    start_seconds = final_seconds - ( convert_to_seconds(TIME_RANGE) )
+    delta_seconds = convert_to_seconds(TIME_RANGE)
 
-    now = put_timestamp_data(datetime.datetime.now(), LOCK_FILE)
+    FINAL_DATE = datetime.datetime.fromtimestamp(final_seconds)
+    FINAL_DATE = ( str ( FINAL_DATE.strftime("%Y-%m-%dT%H:%M:%S") )  + 'Z' )
 
-    start_end_time = { 'start_time': MY_STAMP, 'end_time': now }
+    START_DATE = datetime.datetime.fromtimestamp(start_seconds)
+    START_DATE = ( str ( START_DATE.strftime("%Y-%m-%dT%H:%M:%S") )  + 'Z' )
+
+    if ARGS.VERBOSE > 5:
+
+        print('START_DATE: {}'.format(START_DATE))
+        print('START_SECONDS: {}'.format(start_seconds))
+
+        print('FINAL_DATE: {}'.format(FINAL_DATE))
+        print('FINAL_SECONDS: {}'.format(final_seconds))
+
+        print('DELTA_SECONDS: {}'.format(delta_seconds))
+
+    start_end_time = { 'start_time': START_DATE, 'end_time': FINAL_DATE }
     json_data= { 'time': start_end_time }
 
     DROPBOX_TARGET_URL = DROPBOX_BASE_URL
@@ -193,7 +236,6 @@ if __name__ == '__main__':
             logging.error('status_code: %d - %s', my_status, my_payload)
             sys.exit(get_response.status_code)
         else:
-            ### dropbox_json_logs = json.loads(get_response.content, object_hook=remove_dot_key)
             dropbox_json_logs = json.loads(get_response.content)
         events = dropbox_json_logs['events']
 
@@ -215,6 +257,8 @@ if __name__ == '__main__':
             event['adjusted_timestamp'] = adjusted_timestamp
 
             json_log = json.dumps(event)
+            if ARGS.VERBOSE > 7:
+                print(json.dumps(event, indent=4))
             output_file.write('{}\n'.format(json_log))
 
         if dropbox_json_logs['has_more'] == 'true':
