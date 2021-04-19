@@ -46,6 +46,7 @@ Script Names and Purposes
     2. show the help page
         prompt> ./bin/dropbox_downloader.py -h
 
+```
 usage: dropbox_downloader.py [-h] [-t <token>] [-r <start>] [-d <cachedir>] [-c <cfgfile>] [-v <verbose>] [-i]
 
 Collect data from dropbox via API and cache data locally
@@ -58,6 +59,7 @@ optional arguments:
   -c <cfgfile>      use config file
   -v <verbose>      increase verbosity
   -i, --initialize  initialize config file
+```
 
     3. specify the bearer token to use [required]
         prompt> ./bin/dropbox_downloader.py -t <bearer_token>
