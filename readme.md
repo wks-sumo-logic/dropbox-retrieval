@@ -78,13 +78,22 @@ NOTE: this support ranges in weeks, days, hours, minutes, and seconds
     7. specify script verbosity ( default is 0 or silent save errors )
         prompt> ./bin/dropbox_downloader.py -c /var/tmp/dropbox_downloader.cfg -v 5
 
-    8. initiallize a starter configu file
+    8. initialize a starter configu file
         prompt> ./bin/dropbox_downloader.py -i
+
+    9. specify a specific set of time stamps
+        prompt> ./bin/dropbox_downloader.py -s 2021-04-25T18:18:16Z#2021-04-26T18:18:16Z -c /var/tmp/dropbox_downloader.cfg
+
+NOTE: the stamps are in the T and Z format as you see above, and need to be in start_date#final_date format
 
 To Do List:
 ===========
 
-* improve logging and output files
+* remove locking file
+
+* refactor checksums to include all sums files
+
+* rethink log and checksum management to acrhive and/or delete old files
 
 License
 =======
