@@ -17,6 +17,7 @@ import os
 import sys
 import json
 import datetime
+import hashlib
 import logging
 import argparse
 import configparser
@@ -33,6 +34,9 @@ PARSER.add_argument("-t", metavar='<token>', dest='MY_BEARER_TOKEN', \
 
 PARSER.add_argument("-r", metavar='<start>', dest='MY_TIME_RANGE', \
                     default='1d', help="set time range from current date")
+
+PARSER.add_argument("-s", metavar='<timestamps>', dest='MY_TIME_STAMPS', \
+                    help="use time stamps to search")
 
 PARSER.add_argument("-d", metavar='<cachedir>', dest='MY_CACHE_DIR', \
                     help="set directory")
@@ -114,14 +118,23 @@ if ARGS.VERBOSE > 5:
     print('Range: {}'.format(TIME_RANGE))
 
 DROPBOX_LOCK_DIR = os.path.join(DROPBOX_BASE_DIR, 'lock')
-DROPBOX_LOCK_FILE = os.path.join(DROPBOX_LOCK_DIR, 'dropbox-timestamp.lock')
+DROPBOX_LOCK_FILE = os.path.join(DROPBOX_LOCK_DIR, 'dropbox-downloads.lock')
 if ARGS.VERBOSE > 3:
     logging.info('resolving lock_directory: %s', DROPBOX_LOCK_FILE)
 
+DATE_STAMP = datetime.datetime.now().strftime('%Y%m%d')
+
 DROPBOX_LOGS_DIR = os.path.join(DROPBOX_BASE_DIR, 'logs')
-DROPBOX_LOGS_FILE = os.path.join(DROPBOX_LOGS_DIR, 'dropbox-timestamp.log')
+DROPBOX_LOGS_NAME = 'dropbox-downloads.' + DATE_STAMP + '.log'
+DROPBOX_LOGS_FILE = os.path.join(DROPBOX_LOGS_DIR, DROPBOX_LOGS_NAME)
+
+DROPBOX_SUMS_DIR = os.path.join(DROPBOX_BASE_DIR, 'sums')
+DROPBOX_SUMS_NAME = 'dropbox-checksums.' + DATE_STAMP + '.log'
+DROPBOX_SUMS_FILE = os.path.join(DROPBOX_SUMS_DIR, DROPBOX_SUMS_NAME)
+
 if ARGS.VERBOSE > 3:
     logging.info('resolving logs_directory: %s', DROPBOX_LOGS_FILE)
+    logging.info('resolving sums_directory: %s', DROPBOX_SUMS_FILE)
 
 TODAY = datetime.datetime.today()
 
@@ -144,7 +157,7 @@ def get_timestamp_data():
     Collect the timestamp from either a local file or current date: DROPBOX_LOCK_FILE
     """
 
-    for target_dir in ( DROPBOX_LOCK_DIR, DROPBOX_LOGS_DIR ):
+    for target_dir in ( DROPBOX_LOCK_DIR, DROPBOX_LOGS_DIR, DROPBOX_SUMS_DIR ):
         if not os.path.exists(target_dir):
             if ARGS.VERBOSE > 5:
                 logging.info('creating_directory: %s', target_dir)
@@ -187,25 +200,29 @@ if __name__ == '__main__':
     my_now = datetime.datetime.now()
     now = put_timestamp_data(my_now, LOCK_FILE)
 
-    final_seconds = int( my_now.timestamp() )
-    start_seconds = final_seconds - ( convert_to_seconds(TIME_RANGE) )
-    delta_seconds = convert_to_seconds(TIME_RANGE)
+    if ARGS.MY_TIME_STAMPS:
+        ### MY_TIME_STAMPS = '2021-04-25T18:18:16Z#2021-04-26T18:18:16Z'
+        START_DATE, FINAL_DATE = ARGS.MY_TIME_STAMPS.split('#')
+    else:
+        final_seconds = int( my_now.timestamp() )
+        start_seconds = final_seconds - ( convert_to_seconds(TIME_RANGE) )
+        delta_seconds = convert_to_seconds(TIME_RANGE)
 
-    FINAL_DATE = datetime.datetime.fromtimestamp(final_seconds)
-    FINAL_DATE = ( str ( FINAL_DATE.strftime("%Y-%m-%dT%H:%M:%S") )  + 'Z' )
+        FINAL_DATE = datetime.datetime.fromtimestamp(final_seconds)
+        FINAL_DATE = ( str ( FINAL_DATE.strftime("%Y-%m-%dT%H:%M:%S") )  + 'Z' )
 
-    START_DATE = datetime.datetime.fromtimestamp(start_seconds)
-    START_DATE = ( str ( START_DATE.strftime("%Y-%m-%dT%H:%M:%S") )  + 'Z' )
+        START_DATE = datetime.datetime.fromtimestamp(start_seconds)
+        START_DATE = ( str ( START_DATE.strftime("%Y-%m-%dT%H:%M:%S") )  + 'Z' )
 
     if ARGS.VERBOSE > 5:
 
         print('START_DATE: {}'.format(START_DATE))
-        print('START_SECONDS: {}'.format(start_seconds))
-
         print('FINAL_DATE: {}'.format(FINAL_DATE))
-        print('FINAL_SECONDS: {}'.format(final_seconds))
 
-        print('DELTA_SECONDS: {}'.format(delta_seconds))
+        if not ARGS.MY_TIME_STAMPS:
+            print('START_SECONDS: {}'.format(start_seconds))
+            print('FINAL_SECONDS: {}'.format(final_seconds))
+            print('DELTA_SECONDS: {}'.format(delta_seconds))
 
     start_end_time = { 'start_time': START_DATE, 'end_time': FINAL_DATE }
     json_data= { 'time': start_end_time }
@@ -242,7 +259,10 @@ if __name__ == '__main__':
         events_size = len(events)
         TOTAL_EVENTS += events_size
 
+        SUM_LIST = [line.rstrip('\n') for line in open(DROPBOX_SUMS_FILE)]
+
         output_file = open(DROPBOX_LOGS_FILE, 'a+')
+        output_sums = open(DROPBOX_SUMS_FILE, 'a+')
         for event in events:
 
             jsonstamp = event['timestamp'].replace('T', ' ').replace('Z', '')
@@ -257,9 +277,15 @@ if __name__ == '__main__':
             event['adjusted_timestamp'] = adjusted_timestamp
 
             json_log = json.dumps(event)
+            json_log = json_log.rstrip('\n')
+            JSON_SUM = hashlib.md5(json_log.encode('utf-8')).hexdigest()
+
             if ARGS.VERBOSE > 7:
                 print(json.dumps(event, indent=4))
-            output_file.write('{}\n'.format(json_log))
+
+            if JSON_SUM in SUM_LIST:
+                output_file.write('{}\n'.format(json_log))
+                output_sums.write('{}\n'.format(JSON_SUM))
 
         if dropbox_json_logs['has_more'] == 'true':
             DROPBOX_TARGET_URL = 'https://api.dropboxapi.com/2/team_log/get_events/continue'
