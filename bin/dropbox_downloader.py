@@ -129,7 +129,7 @@ DROPBOX_LOGS_NAME = 'dropbox-downloads.' + DATE_STAMP + '.log'
 DROPBOX_LOGS_FILE = os.path.join(DROPBOX_LOGS_DIR, DROPBOX_LOGS_NAME)
 
 DROPBOX_SUMS_DIR = os.path.join(DROPBOX_BASE_DIR, 'sums')
-DROPBOX_SUMS_NAME = 'dropbox-checksums.' + DATE_STAMP + '.log'
+DROPBOX_SUMS_NAME = 'dropbox-checksums.' + DATE_STAMP + '.sum'
 DROPBOX_SUMS_FILE = os.path.join(DROPBOX_SUMS_DIR, DROPBOX_SUMS_NAME)
 
 if ARGS.VERBOSE > 3:
@@ -259,6 +259,12 @@ if __name__ == '__main__':
         events_size = len(events)
         TOTAL_EVENTS += events_size
 
+        if not os.path.isfile(DROPBOX_SUMS_FILE):
+            starttext = 'Initialized:' + DROPBOX_SUMS_FILE
+            STRAT_STRING = hashlib.md5(starttext.encode('utf-8')).hexdigest()
+            with open(DROPBOX_SUMS_FILE, 'a+') as output_sums:
+                output_sums.write('{}\n'.format(STRAT_STRING))
+
         SUM_LIST = [line.rstrip('\n') for line in open(DROPBOX_SUMS_FILE)]
 
         output_file = open(DROPBOX_LOGS_FILE, 'a+')
@@ -280,12 +286,15 @@ if __name__ == '__main__':
             json_log = json_log.rstrip('\n')
             JSON_SUM = hashlib.md5(json_log.encode('utf-8')).hexdigest()
 
-            if ARGS.VERBOSE > 7:
-                print(json.dumps(event, indent=4))
-
             if JSON_SUM in SUM_LIST:
+                if ARGS.VERBOSE > 7:
+                    print('Skipping Event. Checksum: {}'.format(JSON_SUM))
+
+            if JSON_SUM not in SUM_LIST:
                 output_file.write('{}\n'.format(json_log))
                 output_sums.write('{}\n'.format(JSON_SUM))
+                if ARGS.VERBOSE > 7:
+                    print(json.dumps(event, indent=4))
 
         if dropbox_json_logs['has_more'] == 'true':
             DROPBOX_TARGET_URL = 'https://api.dropboxapi.com/2/team_log/get_events/continue'
