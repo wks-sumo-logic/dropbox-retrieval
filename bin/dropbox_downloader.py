@@ -261,9 +261,9 @@ if __name__ == '__main__':
 
         if not os.path.isfile(DROPBOX_SUMS_FILE):
             starttext = 'Initialized:' + DROPBOX_SUMS_FILE
-            STRAT_STRING = hashlib.md5(starttext.encode('utf-8')).hexdigest()
+            START_STRING = hashlib.md5(starttext.encode('utf-8')).hexdigest()
             with open(DROPBOX_SUMS_FILE, 'a+') as output_sums:
-                output_sums.write('{}\n'.format(STRAT_STRING))
+                output_sums.write('{}\n'.format(START_STRING))
 
         SUM_LIST = [line.rstrip('\n') for line in open(DROPBOX_SUMS_FILE)]
 
