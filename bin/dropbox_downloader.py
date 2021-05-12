@@ -6,10 +6,9 @@ dropbox_downloader - Simple script to retrieve Dropbox data
 script flow:
     + evaluate/validate variables
     + create directory and files if needed
-    + gets timestamps
-    + sets timestamps
-    + gets data and sanitizes it
-    + retrieves any extra based on cursors
+    + gets data and enriches it
+    + calculates a checksum on enriched data
+    + skips persisting data it has already "seen"
     + persists the data locally
 """
 
@@ -117,23 +116,20 @@ if ARGS.VERBOSE > 5:
     print('Cache: {}'.format(DROPBOX_BASE_DIR))
     print('Range: {}'.format(TIME_RANGE))
 
-DROPBOX_LOCK_DIR = os.path.join(DROPBOX_BASE_DIR, 'lock')
-DROPBOX_LOCK_FILE = os.path.join(DROPBOX_LOCK_DIR, 'dropbox-downloads.lock')
-if ARGS.VERBOSE > 3:
-    logging.info('resolving lock_directory: %s', DROPBOX_LOCK_FILE)
-
 DATE_STAMP = datetime.datetime.now().strftime('%Y%m%d')
 
 DROPBOX_LOGS_DIR = os.path.join(DROPBOX_BASE_DIR, 'logs')
 DROPBOX_LOGS_NAME = 'dropbox-downloads.' + DATE_STAMP + '.log'
 DROPBOX_LOGS_FILE = os.path.join(DROPBOX_LOGS_DIR, DROPBOX_LOGS_NAME)
 
+if ARGS.VERBOSE > 3:
+    logging.info('resolving logs_directory: %s', DROPBOX_LOGS_FILE)
+
 DROPBOX_SUMS_DIR = os.path.join(DROPBOX_BASE_DIR, 'sums')
 DROPBOX_SUMS_NAME = 'dropbox-checksums.' + DATE_STAMP + '.sum'
 DROPBOX_SUMS_FILE = os.path.join(DROPBOX_SUMS_DIR, DROPBOX_SUMS_NAME)
 
 if ARGS.VERBOSE > 3:
-    logging.info('resolving logs_directory: %s', DROPBOX_LOGS_FILE)
     logging.info('resolving sums_directory: %s', DROPBOX_SUMS_FILE)
 
 TODAY = datetime.datetime.today()
@@ -144,6 +140,11 @@ DROPBOX_BASE_URL = 'https://api.dropboxapi.com/2/team_log/get_events'
 
 SECONDS_TABLE = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
 
+for target_dir in ( DROPBOX_LOGS_DIR, DROPBOX_SUMS_DIR ):
+    if not os.path.exists(target_dir):
+        if ARGS.VERBOSE > 5:
+            logging.info('creating_directory: %s', target_dir)
+        os.makedirs(target_dir)
 
 def convert_to_seconds(my_range):
     """
@@ -151,57 +152,11 @@ def convert_to_seconds(my_range):
     """
     return int(my_range[:-1]) * SECONDS_TABLE[my_range[-1]]
 
-def get_timestamp_data():
-
-    """
-    Collect the timestamp from either a local file or current date: DROPBOX_LOCK_FILE
-    """
-
-    for target_dir in ( DROPBOX_LOCK_DIR, DROPBOX_LOGS_DIR, DROPBOX_SUMS_DIR ):
-        if not os.path.exists(target_dir):
-            if ARGS.VERBOSE > 5:
-                logging.info('creating_directory: %s', target_dir)
-            os.makedirs(target_dir)
-
-    my_timestamp = TIMESTAMP
-
-    if os.path.exists(DROPBOX_LOCK_FILE):
-        if ARGS.VERBOSE > 5:
-            logging.info('reading_timestamp: %s', DROPBOX_LOCK_FILE)
-        with open(DROPBOX_LOCK_FILE, 'r') as time_stamp_file:
-            my_timestamp = time_stamp_file.read()
-
-    my_timestamp = my_timestamp + 'Z'
-    return my_timestamp, DROPBOX_LOCK_FILE
-
-def put_timestamp_data(my_tsvalue, my_tsfile):
-
-    """
-    Persist the timestamp into a local file for comparison: DROPBOX_LOCK_FILE
-    """
-
-    my_timestamp = my_tsvalue.replace(microsecond=0).isoformat()
-    try:
-        with open(my_tsfile, 'w') as time_stamp_file:
-            if ARGS.VERBOSE > 5:
-                logging.info('writing_timestamp: %s', DROPBOX_LOCK_FILE)
-            time_stamp_file.write(my_timestamp)
-    except OSError as my_error:
-        logging.error('Unexpected issue encountered (%d): %s', my_error.errno, my_error.strerror)
-        raise
-
-    my_timestamp = my_timestamp + 'Z'
-    return my_timestamp
-
 if __name__ == '__main__':
 
-    MY_STAMP, LOCK_FILE = get_timestamp_data()
-
     my_now = datetime.datetime.now()
-    now = put_timestamp_data(my_now, LOCK_FILE)
 
     if ARGS.MY_TIME_STAMPS:
-        ### MY_TIME_STAMPS = '2021-04-25T18:18:16Z#2021-04-26T18:18:16Z'
         START_DATE, FINAL_DATE = ARGS.MY_TIME_STAMPS.split('#')
     else:
         final_seconds = int( my_now.timestamp() )
