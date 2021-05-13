@@ -21,6 +21,7 @@ import logging
 import argparse
 import configparser
 import requests
+import boto3
 
 logging.basicConfig(level=logging.INFO)
 
@@ -123,14 +124,14 @@ DROPBOX_LOGS_NAME = 'dropbox-downloads.' + DATE_STAMP + '.log'
 DROPBOX_LOGS_FILE = os.path.join(DROPBOX_LOGS_DIR, DROPBOX_LOGS_NAME)
 
 if ARGS.VERBOSE > 3:
-    logging.info('resolving logs_directory: %s', DROPBOX_LOGS_FILE)
+    print('resolving logs_directory: {}'.format(DROPBOX_LOGS_FILE))
 
 DROPBOX_SUMS_DIR = os.path.join(DROPBOX_BASE_DIR, 'sums')
 DROPBOX_SUMS_NAME = 'dropbox-checksums.' + DATE_STAMP + '.sum'
 DROPBOX_SUMS_FILE = os.path.join(DROPBOX_SUMS_DIR, DROPBOX_SUMS_NAME)
 
 if ARGS.VERBOSE > 3:
-    logging.info('resolving sums_directory: %s', DROPBOX_SUMS_FILE)
+    print('resolving logs_directory: {}'.format(DROPBOX_SUMS_FILE))
 
 TODAY = datetime.datetime.today()
 
@@ -143,7 +144,7 @@ SECONDS_TABLE = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
 for target_dir in ( DROPBOX_LOGS_DIR, DROPBOX_SUMS_DIR ):
     if not os.path.exists(target_dir):
         if ARGS.VERBOSE > 5:
-            logging.info('creating_directory: %s', target_dir)
+            print('creating_directory: {}'.format(target_dir))
         os.makedirs(target_dir)
 
 def convert_to_seconds(my_range):
@@ -189,6 +190,23 @@ if __name__ == '__main__':
     CONTINUE_FLAG = "no"
 
     GET_DATA = "true"
+
+    if "aws:ssm:" in BEARER_TOKEN:
+        VENDOR, METHOD, REGION, TOKENS = BEARER_TOKEN.split(':')
+        if ARGS.VERBOSE > 7:
+            print('VENDOR: {}'.format(VENDOR))
+            print('METHOD: {}'.format(METHOD))
+            print('REGION: {}'.format(REGION))
+            print('TOKENS: {}'.format(TOKENS))
+
+        ssmobject = boto3.client(METHOD, region_name=REGION)
+
+        ssmresponse = ssmobject.get_parameters_by_path(
+            Path=TOKENS,
+            WithDecryption=True
+        )
+
+        BEARER_TOKEN = ssmresponse['Parameters'][0]['Value']
 
     while GET_DATA == "true":
 
@@ -255,6 +273,6 @@ if __name__ == '__main__':
             DROPBOX_TARGET_URL = 'https://api.dropboxapi.com/2/team_log/get_events/continue'
             json_data = { 'cursor': dropbox_json_logs['cursor'] }
             if ARGS.VERBOSE > 7:
-                logging.info('Retrieved: %d bytes and getting more data.', events_size)
+                print('Retrieved: {} bytes and getting more data.'.format(events_size))
         else:
             GET_DATA = "false"
