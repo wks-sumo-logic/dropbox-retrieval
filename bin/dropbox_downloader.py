@@ -207,6 +207,9 @@ if __name__ == '__main__':
         )
 
         BEARER_TOKEN = ssmresponse['Parameters'][0]['Value']
+        if ARGS.VERBOSE > 7:
+            print('BEARER: {}'.format(BEARER_TOKEN))
+        sys.exit()
 
     while GET_DATA == "true":
 
