@@ -200,16 +200,15 @@ if __name__ == '__main__':
             print('TOKENS: {}'.format(TOKENS))
 
         ssmobject = boto3.client(METHOD, region_name=REGION)
-
-        ssmresponse = ssmobject.get_parameters_by_path(
-            Path=TOKENS,
+        ssmresponse = ssmobject.get_parameters(
+            Names=[ TOKENS ],
             WithDecryption=True
         )
 
         BEARER_TOKEN = ssmresponse['Parameters'][0]['Value']
+
         if ARGS.VERBOSE > 7:
             print('BEARER: {}'.format(BEARER_TOKEN))
-        sys.exit()
 
     while GET_DATA == "true":
 
