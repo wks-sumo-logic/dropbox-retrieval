@@ -243,7 +243,9 @@ if __name__ == '__main__':
         SUM_LIST = [line.rstrip('\n') for line in open(DROPBOX_SUMS_FILE)]
 
         output_file = open(DROPBOX_LOGS_FILE, 'a+')
+
         output_sums = open(DROPBOX_SUMS_FILE, 'a+')
+
         for event in events:
 
             jsonstamp = event['timestamp'].replace('T', ' ').replace('Z', '')
