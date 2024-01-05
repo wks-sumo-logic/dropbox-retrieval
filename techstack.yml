@@ -1,7 +1,8 @@
 repo_name: wayne-kirk-schmidt/dropbox-downloader
 report_id: f098f52b70a49f86419f903e599bb4e6
+version: 0.1
 repo_type: Public
-timestamp: '2023-11-10T03:08:44+00:00'
+timestamp: '2024-01-05T09:03:22+00:00'
 requested_by: wks-sumo-logic
 provider: github
 branch: master
@@ -16,6 +17,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Languages
   image_url: https://img.stackshare.io/service/993/pUBY5pVj.png
+  detection_source_url: https://github.com/wayne-kirk-schmidt/dropbox-downloader
   detection_source: Repo Metadata
 - name: Git
   description: Fast, scalable, distributed revision control system
@@ -25,6 +27,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Version Control System
   image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source_url: https://github.com/wayne-kirk-schmidt/dropbox-downloader
   detection_source: Repo Metadata
 - name: PyPI
   description: A repository of software for the Python programming language
@@ -34,12 +37,13 @@ tools:
   category: Build, Test, Deploy
   sub_category: Hosted Package Repository
   image_url: https://img.stackshare.io/service/12572/-RIWgodF_400x400.jpg
+  detection_source_url: https://github.com/wayne-kirk-schmidt/dropbox-downloader/blob/master/Pipfile
   detection_source: Pipfile
   last_updated_by: Wayne Schmidt
   last_updated_on: 2021-03-05 05:53:32.000000000 Z
 - name: argparse
   description: Python command-line parsing library
-  package_url: https://pypi.org/argparse
+  package_url: https://pypi.org/project/argparse
   version: 1.4.0
   license: Python-2.0
   open_source: true
@@ -47,13 +51,13 @@ tools:
   category: Libraries
   sub_category: PyPI Packages
   image_url: https://img.stackshare.io/package/19871/default_d05f6f09935776629f62e8aed365805502c14921.png
-  detection_source_url: Pipfile.lock
+  detection_source_url: https://github.com/wayne-kirk-schmidt/dropbox-downloader/blob/master/Pipfile.lock
   detection_source: Pipfile
   last_updated_by: Wayne Schmidt
   last_updated_on: 2021-03-08 08:35:34.000000000 Z
 - name: boto3
   description: The AWS SDK for Python
-  package_url: https://pypi.org/boto3
+  package_url: https://pypi.org/project/boto3
   version: 1.17.72
   license: Apache-2.0
   open_source: true
@@ -61,13 +65,13 @@ tools:
   category: Libraries
   sub_category: PyPI Packages
   image_url: https://img.stackshare.io/package/19840/default_1c41e593803157c668b26f27387160254f0f5371.png
-  detection_source_url: Pipfile.lock
+  detection_source_url: https://github.com/wayne-kirk-schmidt/dropbox-downloader/blob/master/Pipfile.lock
   detection_source: Pipfile
   last_updated_by: Wayne Schmidt
   last_updated_on: 2021-05-13 09:43:37.000000000 Z
 - name: configparser
   description: Updated configparser from Python 3.7 for Python 2.6+
-  package_url: https://pypi.org/configparser
+  package_url: https://pypi.org/project/configparser
   version: 5.0.2
   license: MIT
   open_source: true
@@ -75,13 +79,13 @@ tools:
   category: Libraries
   sub_category: PyPI Packages
   image_url: https://img.stackshare.io/package/19879/default_2270bfab784e3d2c2d999d26b11ee478a9dad238.png
-  detection_source_url: Pipfile.lock
+  detection_source_url: https://github.com/wayne-kirk-schmidt/dropbox-downloader/blob/master/Pipfile.lock
   detection_source: Pipfile
   last_updated_by: Wayne Schmidt
   last_updated_on: 2021-03-08 08:35:34.000000000 Z
 - name: requests
   description: Python HTTP for Humans
-  package_url: https://pypi.org/requests
+  package_url: https://pypi.org/project/requests
   version: 2.25.1
   license: Apache-2.0
   open_source: true
@@ -89,7 +93,7 @@ tools:
   category: Libraries
   sub_category: PyPI Packages
   image_url: https://img.stackshare.io/package/19826/default_d7c684bf2673f008a9f02ac93901229297a22d7e.png
-  detection_source_url: Pipfile.lock
+  detection_source_url: https://github.com/wayne-kirk-schmidt/dropbox-downloader/blob/master/Pipfile.lock
   detection_source: Pipfile
   last_updated_by: Wayne Schmidt
   last_updated_on: 2021-03-05 05:53:32.000000000 Z
